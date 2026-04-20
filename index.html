@@ -455,9 +455,11 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
 
 <script>
 // ═══════════════════════════════════════════════
-// STORAGE ENGINE — tất cả dữ liệu lưu localStorage
+// STORAGE ENGINE — API server (dùng chung) + localStorage (cache)
 // ═══════════════════════════════════════════════
-const DB_KEY = 'taskflow_v3';
+const DB_KEY = 'taskflow_v3_cache';
+let USE_SERVER = false;   // true khi kết nối server thành công
+let _saveTimer = null;    // debounce timer
 
 const DEFAULT_DATA = {
   users:[
@@ -474,16 +476,44 @@ const DEFAULT_DATA = {
   asn:{},cmts:{},logs:{},notifs:[],theme:'dark',
 };
 
-function dbLoad(){
+// ── Đọc dữ liệu: thử server trước, fallback localStorage ──
+async function dbLoad(){
+  // 1. Thử lấy từ server
+  try{
+    const r=await fetch('/api/data',{method:'GET',headers:{'Content-Type':'application/json'}});
+    if(r.ok){
+      const serverData=await r.json();
+      USE_SERVER=true;
+      // Nếu server trả về rỗng {} → lần đầu chạy, seed dữ liệu mặc định
+      if(!serverData||!serverData.users){
+        const init=buildInitData();
+        await dbSaveToServer(init);
+        return init;
+      }
+      const merged={...DEFAULT_DATA,...serverData};
+      // Cập nhật cache local
+      try{localStorage.setItem(DB_KEY,JSON.stringify(merged));}catch(e){}
+      return merged;
+    }
+  }catch(e){console.warn('[Storage] Server không khả dụng, dùng localStorage:',e.message);}
+
+  // 2. Fallback: dùng localStorage
+  USE_SERVER=false;
   try{
     const raw=localStorage.getItem(DB_KEY);
     if(raw){
       const d=JSON.parse(raw);
-      // Merge defaults for any missing keys
       return{...DEFAULT_DATA,...d};
     }
   }catch(e){}
-  // First run — seed demo tasks
+
+  // 3. Lần đầu tiên, không có gì cả
+  const init=buildInitData();
+  try{localStorage.setItem(DB_KEY,JSON.stringify(init));}catch(e){}
+  return init;
+}
+
+function buildInitData(){
   const off=n=>{const x=new Date();x.setDate(x.getDate()+n);return x.toISOString().split('T')[0]};
   const demoTasks=[
     {id:'t1',title:'Thiết kế UI Dashboard',desc:'Wireframe và mockup cho dashboard chính, metric cards, kanban view.',priority:'high',status:'inreview',creator:'u1',start:off(-10),deadline:off(4),tags:['UI','Design'],subs:[{t:'Wireframe layout',d:true},{t:'Màu sắc & typography',d:true},{t:'Thiết kế component',d:true},{t:'Review với team',d:false}],created:off(-10)},
@@ -502,21 +532,32 @@ function dbLoad(){
     t1:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-10)},{i:'→',t:'Giao cho Phạm Diệu Lan, Nguyễn Phúc Đức',ts:off(-10)},{i:'◆',t:'Todo → In Progress',ts:off(-8)},{i:'◆',t:'In Progress → In Review',ts:off(-1)}],
     t2:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-12)},{i:'→',t:'Giao cho Lê Trường Hùng',ts:off(-12)},{i:'◆',t:'Todo → In Progress',ts:off(-9)}],
   };
-  const init={...DEFAULT_DATA,tasks:demoTasks,asn:demoAsn,cmts:demoCmts,logs:demoLogs};
-  dbSave(init);
-  return init;
+  return{...DEFAULT_DATA,tasks:demoTasks,asn:demoAsn,cmts:demoCmts,logs:demoLogs};
 }
 
-function dbSave(data){
+// ── Ghi lên server ──
+async function dbSaveToServer(data){
   try{
-    localStorage.setItem(DB_KEY,JSON.stringify(data));
+    const r=await fetch('/api/data',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    return r.ok;
   }catch(e){
-    console.warn('localStorage full',e);
-    // Hiển thị cảnh báo cho người dùng — chỉ 1 lần mỗi phiên
-    if(!window._quotaWarned){
-      window._quotaWarned=true;
-      alert('⚠️ Cảnh báo: Bộ nhớ trình duyệt sắp đầy!\nMột số dữ liệu có thể không được lưu.\nVui lòng liên hệ admin hoặc xoá bớt dữ liệu cũ.');
-    }
+    console.warn('[Storage] Ghi server thất bại:',e.message);
+    return false;
+  }
+}
+
+// ── dbSave: ghi cache ngay, ghi server sau (debounce 800ms) ──
+function dbSave(data){
+  // Luôn cập nhật localStorage làm cache
+  try{localStorage.setItem(DB_KEY,JSON.stringify(data));}catch(e){}
+  // Ghi server với debounce — tránh gọi quá nhiều khi thao tác nhanh
+  if(USE_SERVER){
+    clearTimeout(_saveTimer);
+    _saveTimer=setTimeout(()=>dbSaveToServer(data),800);
   }
 }
 
@@ -525,25 +566,24 @@ function save(){
 }
 
 // ═══════════════════════════════════════════════
-// STATE
+// STATE — khởi tạo async, hiện boot screen trong lúc load
 // ═══════════════════════════════════════════════
-const loaded = dbLoad();
 const S = {
   cur: null,
-  users: loaded.users,
-  tasks: loaded.tasks,
-  asn: loaded.asn,
-  cmts: loaded.cmts,
-  logs: loaded.logs,
-  notifs: loaded.notifs,
-  theme: loaded.theme||'dark',
+  users: DEFAULT_DATA.users,
+  tasks: DEFAULT_DATA.tasks,
+  asn: DEFAULT_DATA.asn,
+  cmts: DEFAULT_DATA.cmts,
+  logs: DEFAULT_DATA.logs,
+  notifs: DEFAULT_DATA.notifs,
+  theme: 'dark',
   page: 'dashboard',
   fStat: 'all',
   fPri: 'all',
   notifOpen: false,
-  ganttCollapsed: {},   // Gantt: {parentId: true} → subtask ẩn
-  kbCollapsed: {},      // Kanban: {parentId: true} → subtask ẩn
-  tblCollapsed: {},     // Bảng task: {parentId: true} → subtask ẩn
+  ganttCollapsed: {},
+  kbCollapsed: {},
+  tblCollapsed: {},
 };
 
 // ═══════════════════════════════════════════════
@@ -2607,9 +2647,29 @@ function printReport(){
   setTimeout(()=>w.print(),500);
 }
 // ═══════════════════════════════════════════════
-window.addEventListener('load',()=>{
-  // Apply theme before anything shows
+window.addEventListener('load',async()=>{
+  // Hiện trạng thái đang kết nối
+  const bootMsg=document.querySelector('#boot div:last-child');
+  if(bootMsg)bootMsg.textContent='Đang kết nối máy chủ...';
+
+  // Load dữ liệu (server hoặc localStorage)
+  const loaded=await dbLoad();
+
+  // Áp vào S
+  S.users=loaded.users||DEFAULT_DATA.users;
+  S.tasks=loaded.tasks||[];
+  S.asn=loaded.asn||{};
+  S.cmts=loaded.cmts||{};
+  S.logs=loaded.logs||{};
+  S.notifs=loaded.notifs||[];
+  S.theme=loaded.theme||'dark';
+
+  // Hiện trạng thái kết nối
+  if(bootMsg)bootMsg.textContent=USE_SERVER?'Đã kết nối máy chủ ✓':'Chế độ ngoại tuyến (offline)';
+
+  // Áp theme
   document.documentElement.setAttribute('data-theme',S.theme);
+
   setTimeout(()=>{
     const boot=document.getElementById('boot');
     boot.classList.add('fade');
@@ -2617,10 +2677,10 @@ window.addEventListener('load',()=>{
       boot.style.display='none';
       document.getElementById('auth').style.display='flex';
     },350);
-  },900);
+  },600);
 });
 
-// Auto-save every 30s as safety net
+// Auto-save mỗi 30s
 setInterval(()=>{if(S.cur)save();},30000);
 
 // ═══════════════════════════════════════════════
