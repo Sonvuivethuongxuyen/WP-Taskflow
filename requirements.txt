@@ -1,1 +1,1 @@
-# No external dependencies
+# Không cần thư viện ngoài — chỉ dùng Python stdlib
