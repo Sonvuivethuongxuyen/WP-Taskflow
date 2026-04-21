@@ -437,6 +437,8 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
         <div class="tpick" id="tp-light" onclick="setTheme('light')" style="background:#f0f2f5;border:2px solid #c5cad4" title="Light"></div>
         <div class="tpick" id="tp-sepia" onclick="setTheme('sepia')" style="background:#d4a853;border:2px solid #554f3a" title="Sepia"></div>
       </div>
+      <!-- SYNC STATUS BADGE -->
+      <span id="sync-badge" style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;background:var(--s2);color:var(--tx3);cursor:default;white-space:nowrap;border:1px solid var(--bd)" title="Trạng thái đồng bộ Supabase">…</span>
       <button class="ibt" id="nb" onclick="toggleNotif()">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 0 0-5 5v2.69l-.707.707A1 1 0 0 0 3 11h10a1 1 0 0 0 .707-1.707L13 8.69V6A5 5 0 0 0 8 1zm0 14a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2z"/></svg>
         <div class="nbdot" id="nbdot"></div>
@@ -466,9 +468,23 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
 
 <script>
 // ═══════════════════════════════════════════════
-// STORAGE ENGINE — tất cả dữ liệu lưu localStorage
+// STORAGE ENGINE v5 — Gọi THẲNG Supabase từ trình duyệt
+// Không cần server.py — hoạt động với Static Site trên Render/Github Pages
 // ═══════════════════════════════════════════════
-const DB_KEY = 'taskflow_v3';
+
+// ╔══════════════════════════════════════════════╗
+// ║  ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY   ║
+// ╚══════════════════════════════════════════════╝
+const SUPA_URL = 'https://qqsuxmvkwiuicsbglqfb.supabase.co';   // ví dụ: https://abcxyz.supabase.co
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxc3V4bXZrd2l1aWNzYmdscWZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NzAzMTQsImV4cCI6MjA5MjI0NjMxNH0.UUz9zLxQ3frDnNJsWm7idnJCLvcqgMZC_Z_Hg5FXW0g'; // anon public key
+// ════════════════════════════════════════════════
+
+const SUPA_TABLE = 'app_data';
+const SUPA_ROW   = 'taskflow_v3';
+const DB_KEY     = 'taskflow_v3';       // localStorage cache key
+
+// Kiểm tra đã cấu hình chưa
+const SUPA_READY = SUPA_URL !== 'SUPABASE_URL_HERE' && SUPA_KEY !== 'SUPABASE_ANON_KEY_HERE' && SUPA_URL.startsWith('https://');
 
 const DEFAULT_DATA = {
   users:[
@@ -481,89 +497,170 @@ const DEFAULT_DATA = {
     {id:'u6',username:'hainh',password:'123456789',full_name:'Nguyễn Hải Nh',role:'member',color:'#059669'},
     {id:'u7',username:'trangnt',password:'123456789',full_name:'Nguyễn Thị Trang',role:'member',color:'#db2777'},
   ],
-  tasks:[],
-  asn:{},cmts:{},logs:{},notifs:[],theme:'dark',tblCollapsed:{},
+  tasks:[],asn:{},cmts:{},logs:{},notifs:[],theme:'dark',tblCollapsed:{},
 };
 
-function dbLoad(){
-  try{
-    const raw=localStorage.getItem(DB_KEY);
-    if(raw){
-      const d=JSON.parse(raw);
-      // Merge defaults for any missing keys
-      return{...DEFAULT_DATA,...d};
-    }
-  }catch(e){}
-  // First run — seed demo tasks
+function makeDemoData(){
   const off=n=>{const x=new Date();x.setDate(x.getDate()+n);return x.toISOString().split('T')[0]};
-  const demoTasks=[
-    {id:'t1',title:'Thiết kế UI Dashboard',desc:'Wireframe và mockup cho dashboard chính, metric cards, kanban view.',priority:'high',status:'inreview',creator:'u1',start:off(-10),deadline:off(4),tags:['UI','Design'],subs:[{t:'Wireframe layout',d:true},{t:'Màu sắc & typography',d:true},{t:'Thiết kế component',d:true},{t:'Review với team',d:false}],created:off(-10)},
-    {id:'t2',title:'API xác thực người dùng',desc:'JWT + Refresh Token, Google OAuth, rate limiting.',priority:'critical',status:'inprogress',creator:'u1',start:off(-12),deadline:off(0),tags:['Backend','Security'],subs:[{t:'JWT login/register',d:true},{t:'Refresh token',d:true},{t:'Google OAuth',d:false},{t:'Rate limiting',d:false}],created:off(-12)},
-    {id:'t3',title:'Tài liệu Swagger API',desc:'OpenAPI 3.0 documentation cho toàn bộ REST endpoints.',priority:'medium',status:'todo',creator:'u1',start:off(-1),deadline:off(9),tags:['Docs'],subs:[{t:'Liệt kê endpoints',d:false},{t:'Viết schemas',d:false}],created:off(-5)},
-    {id:'t4',title:'QA Kanban board',desc:'Test drag & drop, cross-browser, mobile responsive.',priority:'high',status:'todo',creator:'u2',start:off(-2),deadline:off(1),tags:['QA'],subs:[{t:'Test desktop',d:false},{t:'Test mobile',d:false}],created:off(-3)},
-    {id:'t5',title:'Deploy CI/CD & Staging',desc:'GitHub Actions, Docker, Nginx, deploy AWS EC2.',priority:'critical',status:'done',creator:'u1',start:off(-14),deadline:off(-2),tags:['DevOps'],subs:[{t:'Dockerfile',d:true},{t:'GitHub Actions',d:true},{t:'Nginx config',d:true}],created:off(-14)},
-    {id:'t6',title:'Hệ thống thông báo Realtime',desc:'WebSocket, thông báo khi task giao, comment mới.',priority:'medium',status:'inprogress',creator:'u1',start:off(-7),deadline:off(6),tags:['Backend'],subs:[{t:'Socket.io server',d:true},{t:'Frontend handler',d:false}],created:off(-7)},
-  ];
-  const demoAsn={t1:['u2','u5'],t2:['u3'],t3:['u5'],t4:['u4'],t5:['u3','u5'],t6:['u2']};
-  const demoCmts={
-    t1:[{id:'c1',uid:'u2',text:'Đã hoàn thành 3/4 subtask. Đang chờ feedback.',at:off(-1)+'T10:30:00'}],
-    t2:[{id:'c2',uid:'u3',text:'JWT xong, đang gặp vấn đề với Google OAuth callback.',at:off(0)+'T09:00:00'}],
+  return{
+    ...DEFAULT_DATA,
+    tasks:[
+      {id:'t1',title:'Thiết kế UI Dashboard',desc:'Wireframe và mockup cho dashboard chính.',priority:'high',status:'inreview',creator:'u1',start:off(-10),deadline:off(4),tags:['UI','Design'],subs:[{t:'Wireframe layout',d:true},{t:'Màu sắc & typography',d:true},{t:'Thiết kế component',d:true},{t:'Review với team',d:false}],created:off(-10)},
+      {id:'t2',title:'API xác thực người dùng',desc:'JWT + Refresh Token, Google OAuth.',priority:'critical',status:'inprogress',creator:'u1',start:off(-12),deadline:off(0),tags:['Backend','Security'],subs:[{t:'JWT login/register',d:true},{t:'Refresh token',d:true},{t:'Google OAuth',d:false},{t:'Rate limiting',d:false}],created:off(-12)},
+      {id:'t3',title:'Tài liệu Swagger API',desc:'OpenAPI 3.0 documentation.',priority:'medium',status:'todo',creator:'u1',start:off(-1),deadline:off(9),tags:['Docs'],subs:[{t:'Liệt kê endpoints',d:false},{t:'Viết schemas',d:false}],created:off(-5)},
+      {id:'t4',title:'QA Kanban board',desc:'Test drag & drop, cross-browser.',priority:'high',status:'todo',creator:'u2',start:off(-2),deadline:off(1),tags:['QA'],subs:[{t:'Test desktop',d:false},{t:'Test mobile',d:false}],created:off(-3)},
+      {id:'t5',title:'Deploy CI/CD & Staging',desc:'GitHub Actions, Docker, Nginx.',priority:'critical',status:'done',creator:'u1',start:off(-14),deadline:off(-2),tags:['DevOps'],subs:[{t:'Dockerfile',d:true},{t:'GitHub Actions',d:true},{t:'Nginx config',d:true}],created:off(-14)},
+      {id:'t6',title:'Hệ thống thông báo Realtime',desc:'WebSocket, thông báo khi task giao.',priority:'medium',status:'inprogress',creator:'u1',start:off(-7),deadline:off(6),tags:['Backend'],subs:[{t:'Socket.io server',d:true},{t:'Frontend handler',d:false}],created:off(-7)},
+    ],
+    asn:{t1:['u2','u5'],t2:['u3'],t3:['u5'],t4:['u4'],t5:['u3','u5'],t6:['u2']},
+    cmts:{t1:[{id:'c1',uid:'u2',text:'Đã hoàn thành 3/4 subtask. Đang chờ feedback.',at:off(-1)+'T10:30:00'}]},
+    logs:{
+      t1:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-10)},{i:'◆',t:'Todo → In Review',ts:off(-1)}],
+      t2:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-12)},{i:'◆',t:'Todo → In Progress',ts:off(-9)}],
+    },
   };
-  const demoLogs={
-    t1:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-10)},{i:'→',t:'Giao cho Phạm Diệu Lan, Nguyễn Phúc Đức',ts:off(-10)},{i:'◆',t:'Todo → In Progress',ts:off(-8)},{i:'◆',t:'In Progress → In Review',ts:off(-1)}],
-    t2:[{i:'✦',t:'Trần Tuấn Minh tạo task',ts:off(-12)},{i:'→',t:'Giao cho Lê Trường Hùng',ts:off(-12)},{i:'◆',t:'Todo → In Progress',ts:off(-9)}],
-  };
-  const init={...DEFAULT_DATA,tasks:demoTasks,asn:demoAsn,cmts:demoCmts,logs:demoLogs};
-  dbSave(init);
-  return init;
 }
 
-function dbSave(data){
+// ── Trạng thái kết nối ──
+const DB = { mode:'unknown', saving:false, pendingSave:false, lastSync:null, syncError:null };
+
+// ── Supabase headers ──
+function supaHeaders(){
+  return{
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer '+SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates,return=minimal',
+  };
+}
+
+// ── Đọc từ Supabase ──
+async function supaLoad(){
+  if(!SUPA_READY) return undefined;
   try{
-    localStorage.setItem(DB_KEY,JSON.stringify(data));
-  }catch(e){
-    console.warn('localStorage full',e);
-    if(!window._quotaWarned){
-      window._quotaWarned=true;
-      alert('⚠️ Cảnh báo: Bộ nhớ trình duyệt sắp đầy!\nMột số dữ liệu có thể không được lưu.\nVui lòng liên hệ admin hoặc xoá bớt dữ liệu cũ.');
+    const url=`${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ROW}&select=payload`;
+    const r=await fetch(url,{headers:supaHeaders(),cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status+' '+await r.text());
+    const rows=await r.json();
+    if(Array.isArray(rows)&&rows.length>0&&rows[0].payload){
+      const d=rows[0].payload;
+      if(Object.keys(d).length>0) return{...DEFAULT_DATA,...d};
     }
+    return null; // bảng rỗng → cần seed
+  }catch(e){
+    console.error('[supaLoad]',e);
+    return undefined; // lỗi kết nối
   }
 }
 
-function save(){
-  dbSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}});
+// ── Ghi lên Supabase ──
+async function supaWrite(payload){
+  if(!SUPA_READY) return false;
+  try{
+    const url=`${SUPA_URL}/rest/v1/${SUPA_TABLE}`;
+    const r=await fetch(url,{
+      method:'POST',
+      headers:supaHeaders(),
+      body:JSON.stringify({id:SUPA_ROW,payload}),
+    });
+    if(r.status===200||r.status===201||r.status===204) return true;
+    const msg=await r.text();
+    throw new Error('HTTP '+r.status+': '+msg);
+  }catch(e){
+    console.error('[supaWrite]',e);
+    return false;
+  }
 }
 
-// ═══════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════
-const loaded = dbLoad();
+// ── localStorage helpers (cache cục bộ) ──
+function lsLoad(){
+  try{const raw=localStorage.getItem(DB_KEY);if(raw)return{...DEFAULT_DATA,...JSON.parse(raw)};}catch(e){}
+  return null;
+}
+function lsSave(data){
+  try{localStorage.setItem(DB_KEY,JSON.stringify(data));}catch(e){}
+}
 
-// Khôi phục session từ sessionStorage (F5 trong cùng tab giữ session, đóng browser thì mất)
+// ── save() — gọi ở mọi nơi khi thay đổi dữ liệu ──
+let _saveTimer=null;
+function save(){
+  const payload={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
+  lsSave(payload); // cache ngay
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>_doSupaSave(payload),500); // debounce 500ms
+}
+
+async function _doSupaSave(payload){
+  if(DB.mode==='local') return;
+  if(DB.saving){DB.pendingSave=payload;return;}
+  DB.saving=true;
+  const ok=await supaWrite(payload);
+  DB.saving=false;
+  if(ok){
+    DB.lastSync=new Date();DB.syncError=null;
+  } else {
+    DB.syncError='Ghi thất bại';
+  }
+  updateSyncBadge();
+  if(DB.pendingSave){const p=DB.pendingSave;DB.pendingSave=null;_doSupaSave(p);}
+}
+
+// ── Badge trạng thái đồng bộ ──
+function updateSyncBadge(){
+  const el=document.getElementById('sync-badge');
+  if(!el)return;
+  if(!SUPA_READY){
+    el.textContent='⚠ Chưa cấu hình';el.style.color='var(--amber)';
+    el.title='Chưa điền SUPABASE_URL và SUPABASE_KEY vào index.html';
+  } else if(DB.mode==='local'){
+    el.textContent='⚠ Offline';el.style.color='var(--amber)';
+    el.title='Không kết nối được Supabase — dùng localStorage tạm thời';
+  } else if(DB.syncError){
+    el.textContent='✗ Lỗi sync';el.style.color='var(--red)';
+    el.title='Lỗi: '+DB.syncError;
+  } else if(DB.lastSync){
+    const t=DB.lastSync.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    el.textContent='✓ '+t;el.style.color='var(--green)';
+    el.title='Đồng bộ Supabase lúc '+t;
+  } else {
+    el.textContent='…';el.style.color='var(--tx3)';
+    el.title='Đang kết nối Supabase...';
+  }
+}
+
+// ── Polling 15 giây — cập nhật khi máy khác thay đổi ──
+let _pollTimer=null;
+function startPolling(){
+  if(_pollTimer||DB.mode==='local') return;
+  _pollTimer=setInterval(async()=>{
+    if(!S.cur||document.getElementById('mroot').innerHTML) return;
+    const remote=await supaLoad();
+    if(!remote||!remote.tasks) return;
+    const lStr=JSON.stringify({tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,users:S.users});
+    const rStr=JSON.stringify({tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,users:remote.users});
+    if(lStr!==rStr){
+      Object.assign(S,{users:remote.users||S.users,tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,notifs:remote.notifs||S.notifs,tblCollapsed:remote.tblCollapsed||S.tblCollapsed});
+      lsSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed});
+      rp(S.page);
+      const unread=S.notifs.filter(n=>!n.read).length;
+      document.getElementById('nbdot').style.display=unread?'block':'none';
+      DB.lastSync=new Date();updateSyncBadge();
+    }
+  },15000);
+}
+
+// ── Khôi phục session F5 ──
 function restoreSession(users){
-  try{
-    const raw=sessionStorage.getItem('wp_session');
-    if(raw){const d=JSON.parse(raw);return users.find(u=>u.id===d.id)||null;}
-  }catch(e){}
+  try{const raw=sessionStorage.getItem('wp_session');if(raw){const d=JSON.parse(raw);return users.find(u=>u.id===d.id)||null;}}catch(e){}
   return null;
 }
 
-const S = {
-  cur: restoreSession(loaded.users),
-  users: loaded.users,
-  tasks: loaded.tasks,
-  asn: loaded.asn,
-  cmts: loaded.cmts,
-  logs: loaded.logs,
-  notifs: loaded.notifs,
-  theme: loaded.theme||'dark',
-  page: 'dashboard',
-  fStat: 'all',
-  fPri: 'all',
-  notifOpen: false,
-  ganttCollapsed: {},   // Gantt: {parentId: true} → subtask ẩn
-  kbCollapsed: {},      // Kanban: {parentId: true} → subtask ẩn
-  tblCollapsed: loaded.tblCollapsed||{},     // Bảng task: {parentId: true} → subtask ẩn
+// ── STATE ──
+const S={
+  cur:null,
+  users:DEFAULT_DATA.users,tasks:[],asn:{},cmts:{},logs:{},notifs:[],
+  theme:'dark',page:'dashboard',fStat:'all',fPri:'all',notifOpen:false,
+  ganttCollapsed:{},kbCollapsed:{},tblCollapsed:{},reportPeriod:'month',
 };
 
 // ═══════════════════════════════════════════════
@@ -577,8 +674,6 @@ function setTheme(t){
   if(tp)tp.classList.add('on');
   save();
 }
-// Apply saved theme immediately
-document.documentElement.setAttribute('data-theme',S.theme);
 
 // ═══════════════════════════════════════════════
 // UTILS
@@ -671,6 +766,7 @@ function launchApp(startPage='dashboard'){
   const tp=document.getElementById(`tp-${S.theme}`);if(tp)tp.classList.add('on');
   const unread=S.notifs.filter(n=>!n.read).length;
   document.getElementById('nbdot').style.display=unread?'block':'none';
+  updateSyncBadge();
   setupNav();go(startPage);
 }
 
@@ -2642,26 +2738,67 @@ function printReport(){
   setTimeout(()=>w.print(),500);
 }
 // ═══════════════════════════════════════════════
-window.addEventListener('load',()=>{
-  // Apply theme before anything shows
+// BOOT — load từ Supabase, fallback localStorage
+// ═══════════════════════════════════════════════
+async function boot(){
   document.documentElement.setAttribute('data-theme',S.theme);
-  setTimeout(()=>{
-    const boot=document.getElementById('boot');
-    boot.classList.add('fade');
-    setTimeout(()=>{
-      boot.style.display='none';
-      if(S.cur){
-        // Session còn (F5 trong cùng tab) — auto vào app
-        const savedPage=sessionStorage.getItem('wp_page')||'dashboard';
-        launchApp(savedPage);
-      } else {
-        document.getElementById('auth').style.display='flex';
-      }
-    },350);
-  },900);
-});
+  const bootMsg=document.querySelector('#boot div:last-child');
 
-// Auto-save every 30s as safety net
+  if(!SUPA_READY){
+    // Chưa điền thông tin Supabase → dùng localStorage
+    DB.mode='local';
+    if(bootMsg)bootMsg.textContent='⚠ Chưa cấu hình Supabase — dùng dữ liệu cục bộ';
+    const cached=lsLoad();
+    Object.assign(S,cached||(()=>{const d=makeDemoData();lsSave(d);return d;})());
+  } else {
+    if(bootMsg)bootMsg.textContent='Đang kết nối Supabase...';
+    const remote=await supaLoad();
+
+    if(remote===undefined){
+      // Lỗi kết nối → fallback localStorage
+      DB.mode='local';
+      if(bootMsg)bootMsg.textContent='Không kết nối được — dùng dữ liệu cục bộ';
+      Object.assign(S,lsLoad()||makeDemoData());
+    } else if(remote===null){
+      // Supabase rỗng → seed demo data
+      DB.mode='server';
+      if(bootMsg)bootMsg.textContent='Khởi tạo dữ liệu lần đầu...';
+      const demo=makeDemoData();
+      Object.assign(S,demo);
+      lsSave(demo);
+      await supaWrite(demo);
+    } else {
+      // Có dữ liệu từ Supabase
+      DB.mode='server';
+      if(bootMsg)bootMsg.textContent='Đã kết nối Supabase ✓';
+      Object.assign(S,remote);
+      lsSave(remote);
+    }
+  }
+
+  // Apply theme
+  document.documentElement.setAttribute('data-theme',S.theme);
+
+  // Restore session F5
+  S.cur=restoreSession(S.users);
+
+  // Fade boot screen
+  const bootEl=document.getElementById('boot');
+  bootEl.classList.add('fade');
+  setTimeout(()=>{
+    bootEl.style.display='none';
+    if(S.cur){
+      const savedPage=sessionStorage.getItem('wp_page')||'dashboard';
+      launchApp(savedPage);
+    } else {
+      document.getElementById('auth').style.display='flex';
+    }
+  },350);
+
+  if(DB.mode==='server') startPolling();
+}
+
+window.addEventListener('load',()=>{ setTimeout(boot,150); });
 setInterval(()=>{if(S.cur)save();},30000);
 
 // ═══════════════════════════════════════════════
