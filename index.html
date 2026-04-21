@@ -208,14 +208,14 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
 .dt tr:hover td{background:var(--s2)}.dt tr{cursor:pointer}
 
 /* ROLE PILLS */
-.rp{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px}
+.rp{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px;display:inline-block}
 .ra{background:var(--purple-d);color:var(--purple)}.rm{background:var(--acc-d);color:var(--acc)}.rmb{background:var(--s3);color:var(--tx2)}
 
 /* AI PANEL */
-.aip{background:var(--acc-d);border:1px solid var(--acc-d);border-radius:var(--rl);padding:16px;margin-bottom:14px;border-color:var(--bd)}
-.aih{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.aiico{width:22px;height:22px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.ait{font-size:14px;font-weight:700;color:var(--acc)}.ais{font-size:12px;color:var(--tx3);margin-left:auto}
+.aip{background:var(--acc-d);border:1px solid var(--bd);border-radius:var(--rl);padding:18px;margin-bottom:18px}
+.aih{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.aiico{width:32px;height:32px;background:var(--acc);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.ait{font-size:13px;font-weight:700;color:var(--tx)}.ais{font-size:11px;color:var(--tx2);margin-top:2px}
 .gr{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .gn{font-size:13px;color:var(--tx);width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
 .gb{flex:1;height:7px;background:var(--s3);border-radius:3px;overflow:hidden}
@@ -228,29 +228,28 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
 .ri{background:var(--acc-d);border-color:var(--acc);color:var(--acc)}
 
 /* CHECKLIST */
-.chi{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:14px;color:var(--tx)}
-.chi input[type=checkbox]{accent-color:var(--acc);width:13px;height:13px;cursor:pointer}
-.chi.chd span{text-decoration:line-through;color:var(--tx3)}
+.chi{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.chi input{accent-color:var(--acc);flex-shrink:0;width:14px;height:14px}.chi.chd span{text-decoration:line-through;color:var(--tx3)}
 
 /* NOTIFICATIONS */
-.npanel{position:fixed;top:50px;right:10px;width:310px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);z-index:600;box-shadow:0 10px 40px rgba(0,0,0,.4)}
-.ni{display:flex;gap:7px;padding:9px 13px;border-bottom:1px solid var(--bd);cursor:pointer}
+.npanel{position:fixed;top:50px;right:10px;width:310px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);z-index:900;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.ni{display:flex;gap:7px;padding:9px 13px;border-bottom:1px solid var(--bd);cursor:pointer;border-radius:var(--r)}
 .ni:hover{background:var(--s2)}.ni.unr{background:var(--acc-g)}
 .ni .nd{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:4px}
 
 /* FILTER */
-.fr{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
-.fi3{font-size:13px;padding:3px 9px;border:1px solid var(--bd);border-radius:7px;background:var(--s2);color:var(--tx2);cursor:pointer;transition:all .13s;font-weight:500}
-.fi3:hover{border-color:var(--bd2);color:var(--tx)}.fi3.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.fr{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.fi3{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r);font-size:13px;cursor:pointer;border:1px solid var(--bd);background:var(--s2);color:var(--tx2);transition:all .13s;font-weight:500}
+.fi3:hover{background:var(--s3)}.fi3.on{background:var(--acc-d);color:var(--acc);border-color:var(--acc-d);font-weight:600}
 
 /* DIVIDER */
 .dv{border:none;border-top:1px solid var(--bd);margin:14px 0}
 
 /* TAG */
-.tag{font-size:11px;padding:2px 6px;border-radius:5px;background:var(--purple-d);color:var(--purple);font-weight:700}
+.tag{background:var(--s3);color:var(--tx2);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
 
 /* USER MENU */
-.umenu{position:fixed;background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);padding:6px;z-index:700;right:14px;top:52px;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.umenu{position:fixed;background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);padding:6px;z-index:900;right:14px;top:52px;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
 .umi{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;font-size:14px;color:var(--tx2);transition:all .13s}
 .umi:hover{background:var(--s2);color:var(--tx)}.umi.danger{color:var(--red)}.umi.danger:hover{background:var(--red-d)}
 
@@ -360,7 +359,19 @@ textarea.fi2{resize:vertical;min-height:68px;line-height:1.5}
 .pt-recv{background:var(--acc-d);color:var(--acc)}
 .pt-note{font-size:13px;color:var(--tx3);background:var(--s2);border-radius:var(--r);padding:8px 12px;margin-bottom:14px;border-left:3px solid var(--acc)}
 
-/* SUBTASK KANBAN */
+/* IMPORT MODAL */
+.import-dropzone{border:2px dashed var(--bd2);border-radius:var(--rl);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2)}
+.import-dropzone:hover,.import-dropzone.drag-active{border-color:var(--acc);background:var(--acc-g)}
+.import-dropzone input[type=file]{display:none}
+.import-table-wrap{max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:var(--r);margin-top:10px}
+.import-table{width:100%;border-collapse:collapse;font-size:11px}
+.import-table th{background:var(--s3);padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);position:sticky;top:0;text-transform:uppercase;letter-spacing:.3px}
+.import-table td{padding:5px 10px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.import-table tr:last-child td{border-bottom:none}
+.import-table tr.err-row td{background:var(--red-d)}
+.import-err{font-size:11px;color:var(--red);background:var(--red-d);border:1px solid var(--red-d);border-radius:var(--r);padding:7px 11px;margin-top:8px}
+.import-ok{font-size:11px;color:var(--green);background:var(--green-d);border:1px solid var(--green-d);border-radius:var(--r);padding:7px 11px;margin-top:8px}
+
 .tcard-sub{border-left:3px solid var(--acc-d);margin-left:14px;background:var(--s2)}
 .tcard-sub:hover{border-left-color:var(--acc)}
 .sub-parent-link{font-size:11px;color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px;margin-bottom:5px;cursor:pointer;opacity:.8}
@@ -471,7 +482,7 @@ const DEFAULT_DATA = {
     {id:'u7',username:'trangnt',password:'123456789',full_name:'Nguyễn Thị Trang',role:'member',color:'#db2777'},
   ],
   tasks:[],
-  asn:{},cmts:{},logs:{},notifs:[],theme:'dark',
+  asn:{},cmts:{},logs:{},notifs:[],theme:'dark',tblCollapsed:{},
 };
 
 function dbLoad(){
@@ -512,7 +523,6 @@ function dbSave(data){
     localStorage.setItem(DB_KEY,JSON.stringify(data));
   }catch(e){
     console.warn('localStorage full',e);
-    // Hiển thị cảnh báo cho người dùng — chỉ 1 lần mỗi phiên
     if(!window._quotaWarned){
       window._quotaWarned=true;
       alert('⚠️ Cảnh báo: Bộ nhớ trình duyệt sắp đầy!\nMột số dữ liệu có thể không được lưu.\nVui lòng liên hệ admin hoặc xoá bớt dữ liệu cũ.');
@@ -521,15 +531,25 @@ function dbSave(data){
 }
 
 function save(){
-  dbSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme});
+  dbSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}});
 }
 
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
 const loaded = dbLoad();
+
+// Khôi phục session từ sessionStorage (F5 trong cùng tab giữ session, đóng browser thì mất)
+function restoreSession(users){
+  try{
+    const raw=sessionStorage.getItem('wp_session');
+    if(raw){const d=JSON.parse(raw);return users.find(u=>u.id===d.id)||null;}
+  }catch(e){}
+  return null;
+}
+
 const S = {
-  cur: null,
+  cur: restoreSession(loaded.users),
   users: loaded.users,
   tasks: loaded.tasks,
   asn: loaded.asn,
@@ -543,7 +563,7 @@ const S = {
   notifOpen: false,
   ganttCollapsed: {},   // Gantt: {parentId: true} → subtask ẩn
   kbCollapsed: {},      // Kanban: {parentId: true} → subtask ẩn
-  tblCollapsed: {},     // Bảng task: {parentId: true} → subtask ẩn
+  tblCollapsed: loaded.tblCollapsed||{},     // Bảng task: {parentId: true} → subtask ẩn
 };
 
 // ═══════════════════════════════════════════════
@@ -616,20 +636,30 @@ function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
   document.getElementById('lerr').textContent='';
+  if(!u){document.getElementById('lerr').textContent='Vui lòng nhập tên đăng nhập.';return;}
+  if(!p){document.getElementById('lerr').textContent='Vui lòng nhập mật khẩu.';return;}
   const found=S.users.find(x=>x.username===u&&x.password===p);
-  if(found){S.cur=found;launchApp();}
+  if(found){
+    S.cur=found;
+    // Lưu session vào sessionStorage — mất khi đóng trình duyệt, giữ khi F5
+    try{sessionStorage.setItem('wp_session',JSON.stringify({id:found.id}));}catch(e){}
+    // Khôi phục trang đang xem
+    const savedPage=sessionStorage.getItem('wp_page')||'dashboard';
+    launchApp(savedPage);
+  }
   else document.getElementById('lerr').textContent='Sai tên đăng nhập hoặc mật khẩu.';
 }
 
 function doLogout(){
   save();S.cur=null;S.page='dashboard';S.notifOpen=false;
+  try{sessionStorage.removeItem('wp_session');sessionStorage.removeItem('wp_page');}catch(e){}
   document.getElementById('app').style.display='none';
   document.getElementById('auth').style.display='flex';
   document.getElementById('lu').value='';document.getElementById('lp').value='';
   document.getElementById('mroot').innerHTML='';document.getElementById('nroot').innerHTML='';
 }
 
-function launchApp(){
+function launchApp(startPage='dashboard'){
   document.getElementById('auth').style.display='none';
   document.getElementById('app').style.display='flex';
   const u=S.cur;
@@ -641,7 +671,7 @@ function launchApp(){
   const tp=document.getElementById(`tp-${S.theme}`);if(tp)tp.classList.add('on');
   const unread=S.notifs.filter(n=>!n.read).length;
   document.getElementById('nbdot').style.display=unread?'block':'none';
-  setupNav();go('dashboard');
+  setupNav();go(startPage);
 }
 
 // ═══════════════════════════════════════════════
@@ -664,6 +694,7 @@ function setupNav(){
 
 function go(page){
   S.page=page;
+  try{sessionStorage.setItem('wp_page',page);}catch(e){}
   document.querySelectorAll('.nt').forEach(el=>el.classList.remove('on'));
   const nt=document.getElementById(`nt-${page}`);if(nt)nt.classList.add('on');
   document.querySelectorAll('.pg').forEach(el=>el.classList.remove('on'));
@@ -961,7 +992,11 @@ function rTasks(){
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <button class="btn bsm" onclick="collapseAllTbl(true)">▶ Thu gọn subtask</button>
       <button class="btn bsm" onclick="collapseAllTbl(false)">▼ Mở rộng subtask</button>
-      <button class="btn bp bsm" onclick="openCreateTask()">+ Tạo task mới</button>
+      ${!isMember?`<button class="btn bsm" onclick="openImportTasks()" title="Nhập từ file CSV/Excel">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+        Nhập từ file
+      </button>
+      <button class="btn bp bsm" onclick="openCreateTask()">+ Tạo task mới</button>`:''}
     </div>
   </div>
   ${isMember?`<div class="pt-note" style="margin-bottom:14px">Hiển thị task bạn tự tạo và task được giao. Nhấn ▶/▼ để thu gọn/mở rộng subtask.</div>`:''}
@@ -989,9 +1024,9 @@ function deleteTask(id){
   S.tasks=S.tasks.filter(t=>!toDelete.includes(t.id));
   toDelete.forEach(tid=>{
     delete S.asn[tid];delete S.cmts[tid];delete S.logs[tid];
+    delete S.ganttCollapsed[tid];delete S.kbCollapsed[tid];delete S.tblCollapsed[tid];
   });
   S.notifs=S.notifs.filter(n=>!toDelete.includes(n.tid));
-  delete S.ganttCollapsed[id];
   save();rp(S.page);showToast('Đã xoá task.','red');
 }
 
@@ -2615,7 +2650,13 @@ window.addEventListener('load',()=>{
     boot.classList.add('fade');
     setTimeout(()=>{
       boot.style.display='none';
-      document.getElementById('auth').style.display='flex';
+      if(S.cur){
+        // Session còn (F5 trong cùng tab) — auto vào app
+        const savedPage=sessionStorage.getItem('wp_page')||'dashboard';
+        launchApp(savedPage);
+      } else {
+        document.getElementById('auth').style.display='flex';
+      }
     },350);
   },900);
 });
@@ -2773,7 +2814,285 @@ function openQsMenu(e,id,btn){
     document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeQsMenu();},{once:true});
   },10);
 }
-function closeQsMenu(){if(_qsMenuEl){_qsMenuEl.remove();_qsMenuEl=null;}}
+// ═══════════════════════════════════════════════
+// IMPORT TASKS TỪ CSV / EXCEL
+// ═══════════════════════════════════════════════
+/*
+  Định dạng file hỗ trợ:
+  CSV (UTF-8, dấu phẩy hoặc chấm phẩy):
+    Tiêu đề, Mô tả, Ưu tiên, Tags, Ngày bắt đầu (YYYY-MM-DD), Deadline (YYYY-MM-DD), Giao cho (username cách nhau dấu /)
+
+  Ưu tiên hợp lệ: critical / high / medium / low (không phân biệt hoa thường)
+  Giao cho: username1/username2  (có thể để trống)
+  Ví dụ:
+    Triển khai CI/CD,"Cài đặt Github Actions",high,"DevOps,Backend",2025-05-01,2025-05-15,minhtt/hunglt
+*/
+
+let _importRows=[];
+
+function openImportTasks(){
+  _importRows=[];
+  showModal(`
+  <div class="mh">
+    <div>
+      <div style="font-size:14px;font-weight:700">📥 Nhập task từ file CSV / Excel</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:2px">Hỗ trợ .csv và .xlsx (file Excel đã lưu dạng CSV)</div>
+    </div>
+    <button class="cx" onclick="closeModal()">×</button>
+  </div>
+  <div class="mb">
+    <div class="import-dropzone" id="import-dz" onclick="document.getElementById('import-file').click()"
+      ondragover="event.preventDefault();this.classList.add('drag-active')"
+      ondragleave="this.classList.remove('drag-active')"
+      ondrop="importFileDrop(event)">
+      <input type="file" id="import-file" accept=".csv,.txt,.xls,.xlsx" onchange="importFileSelect(this)">
+      <div style="font-size:28px;margin-bottom:8px">📂</div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx)">Kéo thả file vào đây hoặc nhấn để chọn</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:4px">Định dạng: CSV, TXT (phân cách dấu phẩy hoặc chấm phẩy)</div>
+    </div>
+
+    <!-- Mẫu tải về -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+      <span style="font-size:11px;color:var(--tx3)">Cần mẫu file? Tải về để điền vào:</span>
+      <button class="btn bsm" onclick="downloadImportTemplate()">⬇ Tải mẫu CSV</button>
+    </div>
+
+    <div id="import-preview"></div>
+  </div>
+  <div class="mf" id="import-footer">
+    <button class="btn" onclick="closeModal()">Huỷ</button>
+  </div>`,'mlg');
+}
+
+function importFileDrop(e){
+  e.preventDefault();
+  document.getElementById('import-dz').classList.remove('drag-active');
+  const file=e.dataTransfer.files[0];
+  if(file)processImportFile(file);
+}
+
+function importFileSelect(input){
+  const file=input.files[0];
+  if(file)processImportFile(file);
+}
+
+function processImportFile(file){
+  const name=file.name.toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    parseImportCSV(text,file.name);
+  };
+  reader.onerror=()=>showImportError('Không đọc được file. Vui lòng thử lại.');
+  // Đọc dưới dạng text UTF-8
+  reader.readAsText(file,'UTF-8');
+}
+
+function parseImportCSV(text,filename){
+  // Phát hiện delimiter: dấu chấm phẩy hay dấu phẩy
+  const firstLine=text.split('\n')[0]||'';
+  const delim=firstLine.includes(';')?';':',';
+
+  // Parse CSV có hỗ trợ quoted fields
+  function parseCSVLine(line){
+    const result=[];
+    let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){
+        if(inQ&&line[i+1]==='"'){cur+='"';i++;}
+        else{inQ=!inQ;}
+      } else if(ch===delim&&!inQ){
+        result.push(cur.trim());cur='';
+      } else {cur+=ch;}
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length<2){showImportError('File trống hoặc chỉ có header. Cần ít nhất 1 dòng dữ liệu.');return;}
+
+  // Bỏ qua header dòng đầu nếu có chứa từ tiêu đề
+  const header=parseCSVLine(lines[0]);
+  const hasHeader=header[0].toLowerCase().includes('tiêu đề')||header[0].toLowerCase().includes('title')||header[0].toLowerCase().includes('tieu de');
+  const dataLines=hasHeader?lines.slice(1):lines;
+
+  const priorityMap={
+    'critical':'critical','khẩn cấp':'critical','khan cap':'critical',
+    'high':'high','cao':'high',
+    'medium':'medium','trung bình':'medium','trung binh':'medium','normal':'medium',
+    'low':'low','thấp':'low','thap':'low',
+  };
+
+  const rows=[];
+  const errors=[];
+
+  dataLines.forEach((line,idx)=>{
+    if(!line.trim())return;
+    const cols=parseCSVLine(line);
+    const rowNum=hasHeader?idx+2:idx+1;
+
+    const title=(cols[0]||'').replace(/^["']|["']$/g,'').trim();
+    if(!title){errors.push(`Dòng ${rowNum}: Tiêu đề bỏ trống`);return;}
+
+    const desc=(cols[1]||'').trim();
+    const priRaw=(cols[2]||'medium').toLowerCase().trim();
+    const priority=priorityMap[priRaw]||'medium';
+    const tagsRaw=(cols[3]||'').split(/[,|]/).map(t=>t.trim()).filter(Boolean);
+    const startRaw=(cols[4]||'').trim()||new Date().toISOString().split('T')[0];
+    const deadlineRaw=(cols[5]||'').trim();
+    const assignRaw=(cols[6]||'').split('/').map(x=>x.trim()).filter(Boolean);
+
+    // Validate dates
+    const isValidDate=d=>d&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&!isNaN(new Date(d));
+    const startDate=isValidDate(startRaw)?startRaw:new Date().toISOString().split('T')[0];
+    const deadline=isValidDate(deadlineRaw)?deadlineRaw:'';
+
+    // Resolve assignee usernames → ids
+    const assignIds=[];
+    const unknownUsers=[];
+    assignRaw.forEach(uname=>{
+      const u=S.users.find(x=>x.username===uname);
+      if(u)assignIds.push(u.id);
+      else if(uname)unknownUsers.push(uname);
+    });
+    if(unknownUsers.length)errors.push(`Dòng ${rowNum}: Username không tồn tại: ${unknownUsers.join(', ')}`);
+
+    rows.push({
+      rowNum,title,desc,priority,tags:tagsRaw,
+      start:startDate,deadline,assignIds,assignNames:assignRaw,
+      _valid:unknownUsers.length===0&&!!title
+    });
+  });
+
+  _importRows=rows;
+  renderImportPreview(rows,errors,filename);
+}
+
+function renderImportPreview(rows,errors,filename){
+  const preview=document.getElementById('import-preview');
+  const footer=document.getElementById('import-footer');
+  if(!rows.length&&!errors.length){
+    preview.innerHTML='<div class="import-err">Không tìm thấy dữ liệu hợp lệ trong file.</div>';
+    return;
+  }
+
+  const validRows=rows.filter(r=>r._valid);
+  const invalidRows=rows.filter(r=>!r._valid);
+
+  let html=`<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx)">Xem trước dữ liệu — <span style="color:var(--green)">${validRows.length} hợp lệ</span>${invalidRows.length?`, <span style="color:var(--red)">${invalidRows.length} lỗi</span>`:''}</div>
+    <div style="font-size:10px;color:var(--tx3)">${esc(filename)}</div>
+  </div>
+  <div class="import-table-wrap">
+    <table class="import-table">
+      <thead><tr><th>#</th><th>Tiêu đề</th><th>Ưu tiên</th><th>Deadline</th><th>Giao cho</th><th>Tags</th><th>Trạng thái</th></tr></thead>
+      <tbody>`;
+
+  rows.forEach(r=>{
+    const priColors={critical:'var(--pct)',high:'var(--pht)',medium:'var(--pmt)',low:'var(--plt)'};
+    const priLabel={critical:'Critical',high:'High',medium:'Medium',low:'Low'};
+    const aNames=r.assignIds.map(id=>S.users.find(u=>u.id===id)?.full_name?.split(' ').slice(-1)[0]||'?').join(', ')||r.assignNames.join(', ')||'—';
+    html+=`<tr class="${r._valid?'':'err-row'}">
+      <td style="color:var(--tx3);font-family:var(--mono)">${r.rowNum}</td>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title)}">${esc(r.title)}</td>
+      <td><span style="font-size:10px;font-weight:700;color:${priColors[r.priority]}">${priLabel[r.priority]}</span></td>
+      <td style="font-size:10px">${r.deadline||'—'}</td>
+      <td style="font-size:10px">${esc(aNames)}</td>
+      <td style="font-size:10px">${esc((r.tags||[]).join(', '))||'—'}</td>
+      <td>${r._valid
+        ?'<span style="color:var(--green);font-size:10px;font-weight:700">✓ OK</span>'
+        :'<span style="color:var(--red);font-size:10px;font-weight:700">⚠ Lỗi</span>'
+      }</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  if(errors.length){
+    html+=`<div class="import-err"><b>⚠ Cần kiểm tra:</b><ul style="margin:4px 0 0 14px;padding:0">${errors.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></div>`;
+  }
+
+  if(validRows.length){
+    html+=`<div class="import-ok">✓ Sẵn sàng nhập <b>${validRows.length} task</b> vào hệ thống${invalidRows.length?` (bỏ qua ${invalidRows.length} dòng lỗi)`:''}</div>`;
+  }
+
+  preview.innerHTML=html;
+
+  // Cập nhật footer buttons
+  footer.innerHTML=`<button class="btn" onclick="closeModal()">Huỷ</button>
+    ${validRows.length?`<button class="btn bp" onclick="confirmImportTasks()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+      Nhập ${validRows.length} task vào hệ thống
+    </button>`:''}`;
+}
+
+function confirmImportTasks(){
+  const validRows=_importRows.filter(r=>r._valid);
+  if(!validRows.length)return;
+
+  let imported=0;
+  validRows.forEach(r=>{
+    const id='t'+Date.now()+Math.random().toString(36).slice(2,6);
+    S.tasks.unshift({
+      id,
+      title:r.title,
+      desc:r.desc,
+      priority:r.priority,
+      status:'todo',
+      creator:S.cur.id,
+      start:r.start,
+      deadline:r.deadline,
+      tags:r.tags,
+      subs:[],
+      created:new Date().toISOString().split('T')[0]
+    });
+    S.asn[id]=r.assignIds.length?r.assignIds:[];
+    S.cmts[id]=[];
+    S.logs[id]=[{i:'📥',t:`${S.cur.full_name} nhập từ file`,ts:new Date().toLocaleTimeString('vi-VN')}];
+    // Gửi thông báo cho người được giao
+    r.assignIds.forEach(uid=>{
+      const u=uby(uid);
+      if(u&&uid!==S.cur.id)pushN(`${u.full_name} được giao: "${r.title}"`,id);
+    });
+    imported++;
+  });
+
+  save();
+  closeModal();
+  rp(S.page);
+  showToast(`Đã nhập ${imported} task thành công!`,'green');
+  _importRows=[];
+}
+
+function downloadImportTemplate(){
+  const header='Tiêu đề,Mô tả,Ưu tiên,Tags,Ngày bắt đầu (YYYY-MM-DD),Deadline (YYYY-MM-DD),Giao cho (username1/username2)';
+  const today=new Date().toISOString().split('T')[0];
+  const nextWeek=new Date(Date.now()+7*86400000).toISOString().split('T')[0];
+  const nextMonth=new Date(Date.now()+30*86400000).toISOString().split('T')[0];
+  // Lấy username hợp lệ đầu tiên từ hệ thống để làm ví dụ
+  const exUser1=S.users.find(u=>u.role==='member')?.username||'lanpd';
+  const exUser2=S.users.find(u=>u.role==='manager')?.username||'minhtt';
+  const examples=[
+    `"Thiết kế UI Dashboard mới","Wireframe và mockup giao diện theo design system",high,"UI,Design",${today},${nextWeek},${exUser1}`,
+    `"Viết tài liệu hướng dẫn sử dụng","Tài liệu PDF cho end-user",medium,"Docs,Training",${today},${nextMonth},${exUser1}/${exUser2}`,
+    `"Kiểm tra bảo mật hệ thống","Penetration test toàn bộ API",critical,"Security,Backend",${today},${nextWeek},${exUser2}`,
+    `"Tối ưu database","Index và query optimization",low,"Database",${today},,`,
+  ];
+  const csv='\ufeff'+header+'\n'+examples.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='WP_Mau_Import_Task.csv';a.click();
+  URL.revokeObjectURL(url);
+  showToast('Đã tải mẫu CSV!','blue');
+}
+
+function showImportError(msg){
+  const preview=document.getElementById('import-preview');
+  if(preview)preview.innerHTML=`<div class="import-err">⚠ ${esc(msg)}</div>`;
+}
+
 </script>
 </body>
 </html>
