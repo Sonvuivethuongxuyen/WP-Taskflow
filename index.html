@@ -520,9 +520,6 @@ function makeDemoData(){
 // ── Trạng thái kết nối ──
 const DB = { mode:'unknown', saving:false, pendingSave:false, lastSync:null, syncError:null };
 
-// Timestamp lần cuối save() được gọi — polling sẽ bỏ qua nếu quá gần
-let _lastSaveTime = 0;
-
 // ── Supabase headers ──
 function supaHeaders(){
   return{
@@ -545,10 +542,10 @@ async function supaLoad(){
       const d=rows[0].payload;
       if(Object.keys(d).length>0) return{...DEFAULT_DATA,...d};
     }
-    return null;
+    return null; // bảng rỗng → cần seed
   }catch(e){
     console.error('[supaLoad]',e);
-    return undefined;
+    return undefined; // lỗi kết nối
   }
 }
 
@@ -581,46 +578,39 @@ function lsSave(data){
 }
 
 // ── save() — gọi ở mọi nơi khi thay đổi dữ liệu ──
-// FIX: snapshot state tại thời điểm thực sự ghi (trong _doSupaSave),
-//      không phải tại thời điểm save() được gọi — tránh bản cũ thắng bản mới.
+// FIX F5: Ghi localStorage NGAY + ghi Supabase NGAY (không debounce lần đầu).
+// Debounce chỉ áp dụng khi có thao tác liên tiếp trong 300ms để gộp lại.
 let _saveTimer=null;
+let _lastSaveTime=0;
+
 function save(){
-  _lastSaveTime = Date.now(); // đánh dấu "đang có thay đổi chưa ghi xong"
-  // Lưu localStorage ngay lập tức (không debounce) để F5 không mất dữ liệu
-  const snap={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
-  lsSave(snap);
-  // Debounce 800ms rồi mới ghi Supabase — gộp nhiều thao tác liên tiếp
+  _lastSaveTime=Date.now();
+  // 1. Ghi localStorage ngay lập tức — F5 sẽ thấy bản mới nếu Supabase chưa kịp nhận
+  const payload={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
+  lsSave(payload);
+  // 2. Ghi Supabase: debounce 300ms để gộp thao tác liên tiếp, nhưng không trễ quá
   clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(_doSupaSave, 800);
+  _saveTimer=setTimeout(_doSupaSave, 300);
 }
 
 async function _doSupaSave(){
   if(DB.mode==='local') return;
-  if(DB.saving){
-    // Đang ghi dở → đánh dấu cần ghi thêm lần nữa sau khi xong
-    DB.pendingSave=true;
-    return;
-  }
+  if(DB.saving){ DB.pendingSave=true; return; }
   DB.saving=true;
-  _lastSaveTime=Date.now(); // reset lại để polling không chen vào ngay sau khi ghi xong
-  // Snapshot state TẠI THỜI ĐIỂM NÀY — luôn là bản mới nhất
+  // Snapshot STATE TẠI THỜI ĐIỂM GHI — luôn là bản mới nhất, không phải bản cũ từ closure
   const payload={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
   const ok=await supaWrite(payload);
   DB.saving=false;
   if(ok){
     DB.lastSync=new Date();
     DB.syncError=null;
-    _lastSaveTime=Date.now(); // lần cuối sync thành công
+    _lastSaveTime=Date.now();
   } else {
-    DB.syncError='Ghi thất bại — sẽ thử lại';
-    // Thử lại sau 3 giây nếu thất bại
-    setTimeout(_doSupaSave, 3000);
+    DB.syncError='Ghi thất bại — thử lại sau 3s';
+    setTimeout(_doSupaSave, 3000); // tự thử lại
   }
   updateSyncBadge();
-  if(DB.pendingSave){
-    DB.pendingSave=false;
-    setTimeout(_doSupaSave, 300); // ghi thêm lần nữa
-  }
+  if(DB.pendingSave){ DB.pendingSave=false; setTimeout(_doSupaSave,100); }
 }
 
 // ── Badge trạng thái đồng bộ ──
@@ -647,45 +637,43 @@ function updateSyncBadge(){
 }
 
 // ── Polling 15 giây — cập nhật khi máy KHÁC thay đổi ──
-// FIX: bỏ qua poll nếu máy NÀY vừa save trong 5 giây qua (tránh overwrite)
 let _pollTimer=null;
 function startPolling(){
   if(_pollTimer||DB.mode==='local') return;
   _pollTimer=setInterval(async()=>{
-    // Không poll khi: chưa đăng nhập, đang có modal mở, đang save, hoặc vừa save xong
     if(!S.cur) return;
     if(document.getElementById('mroot').innerHTML) return;
     if(DB.saving) return;
-    if(Date.now()-_lastSaveTime < 5000) return; // bỏ qua 5s sau mỗi lần save
+    // Bỏ qua nếu vừa save trong 5 giây — tránh đọc về bản cũ ghi đè bản mới
+    if(Date.now()-_lastSaveTime < 5000) return;
 
     const remote=await supaLoad();
     if(!remote||!remote.tasks) return;
 
-    // So sánh bằng chuỗi JSON — chỉ áp dụng nếu khác thật sự
-    const lStr=JSON.stringify({tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,users:S.users});
-    const rStr=JSON.stringify({tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,users:remote.users});
-    if(lStr===rStr) return; // giống nhau → không cần làm gì
-
-    // Kiểm tra lần nữa — nếu trong lúc đang fetch về thì user vừa save → bỏ qua
+    // Kiểm tra lại sau khi fetch xong (user có thể vừa save trong lúc fetch)
     if(DB.saving) return;
     if(Date.now()-_lastSaveTime < 5000) return;
 
+    // Nếu local có task mà remote không có → local mới hơn, KHÔNG ghi đè
+    const remoteIds=new Set(remote.tasks.map(t=>t.id));
+    const localHasExtra=S.tasks.some(t=>!remoteIds.has(t.id));
+    if(localHasExtra) return;
+
+    const lStr=JSON.stringify({tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,users:S.users});
+    const rStr=JSON.stringify({tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,users:remote.users});
+    if(lStr===rStr) return;
+
     // Áp dụng dữ liệu từ máy khác
     Object.assign(S,{
-      users:remote.users||S.users,
-      tasks:remote.tasks,
-      asn:remote.asn,
-      cmts:remote.cmts,
-      logs:remote.logs,
-      notifs:remote.notifs||S.notifs,
+      users:remote.users||S.users,tasks:remote.tasks,asn:remote.asn,
+      cmts:remote.cmts,logs:remote.logs,notifs:remote.notifs||S.notifs,
       tblCollapsed:remote.tblCollapsed||S.tblCollapsed,
     });
     lsSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed});
     rp(S.page);
     const unread=S.notifs.filter(n=>!n.read).length;
     document.getElementById('nbdot').style.display=unread?'block':'none';
-    DB.lastSync=new Date();
-    updateSyncBadge();
+    DB.lastSync=new Date();updateSyncBadge();
   },15000);
 }
 
@@ -2778,51 +2766,66 @@ function printReport(){
   setTimeout(()=>w.print(),500);
 }
 // ═══════════════════════════════════════════════
-// BOOT — load từ Supabase, fallback localStorage
+// BOOT — load dữ liệu theo thứ tự ưu tiên:
+// 1. Supabase (nguồn chính, dùng chung nhiều máy)
+// 2. localStorage (fallback khi mất mạng, hoặc khi Supabase chưa kịp nhận)
 // ═══════════════════════════════════════════════
 async function boot(){
   document.documentElement.setAttribute('data-theme',S.theme);
   const bootMsg=document.querySelector('#boot div:last-child');
 
   if(!SUPA_READY){
-    // Chưa điền thông tin Supabase → dùng localStorage
     DB.mode='local';
     if(bootMsg)bootMsg.textContent='⚠ Chưa cấu hình Supabase — dùng dữ liệu cục bộ';
     const cached=lsLoad();
     Object.assign(S,cached||(()=>{const d=makeDemoData();lsSave(d);return d;})());
   } else {
     if(bootMsg)bootMsg.textContent='Đang kết nối Supabase...';
-    const remote=await supaLoad();
+
+    // Chạy song song: đọc Supabase VÀ đọc localStorage cùng lúc
+    const [remote, cached] = await Promise.all([supaLoad(), Promise.resolve(lsLoad())]);
 
     if(remote===undefined){
-      // Lỗi kết nối → fallback localStorage
+      // Không kết nối được Supabase → dùng localStorage
       DB.mode='local';
       if(bootMsg)bootMsg.textContent='Không kết nối được — dùng dữ liệu cục bộ';
-      Object.assign(S,lsLoad()||makeDemoData());
+      Object.assign(S, cached||makeDemoData());
     } else if(remote===null){
-      // Supabase rỗng → seed demo data
+      // Supabase rỗng lần đầu
       DB.mode='server';
       if(bootMsg)bootMsg.textContent='Khởi tạo dữ liệu lần đầu...';
-      const demo=makeDemoData();
-      Object.assign(S,demo);
-      lsSave(demo);
-      await supaWrite(demo);
+      // Nếu localStorage có dữ liệu thật (không phải demo) → đẩy lên Supabase
+      const seed = (cached && cached.tasks && cached.tasks.length>0) ? cached : makeDemoData();
+      Object.assign(S, seed);
+      lsSave(seed);
+      await supaWrite(seed);
     } else {
-      // Có dữ liệu từ Supabase
+      // Có dữ liệu từ cả hai — so sánh để lấy bản mới hơn
       DB.mode='server';
-      if(bootMsg)bootMsg.textContent='Đã kết nối Supabase ✓';
-      Object.assign(S,remote);
-      lsSave(remote);
+      // Đếm task để biết bên nào mới hơn (bên nhiều task hơn = mới hơn)
+      // Đây là heuristic đơn giản: nếu localStorage có task mà Supabase không có → dùng localStorage
+      const supaTaskIds = new Set((remote.tasks||[]).map(t=>t.id));
+      const lsTaskIds = cached ? new Set((cached.tasks||[]).map(t=>t.id)) : new Set();
+      const lsHasExtra = cached && [...lsTaskIds].some(id=>!supaTaskIds.has(id));
+
+      if(lsHasExtra){
+        // localStorage có task mới hơn Supabase (chưa kịp sync) → dùng localStorage và đẩy lên Supabase
+        if(bootMsg)bootMsg.textContent='Đồng bộ dữ liệu cục bộ lên Supabase...';
+        Object.assign(S, cached);
+        await supaWrite(cached); // đẩy bản localStorage lên Supabase
+        if(bootMsg)bootMsg.textContent='Đã đồng bộ ✓';
+      } else {
+        // Supabase đầy đủ hơn hoặc bằng → dùng Supabase
+        if(bootMsg)bootMsg.textContent='Đã kết nối Supabase ✓';
+        Object.assign(S, remote);
+        lsSave(remote);
+      }
     }
   }
 
-  // Apply theme
   document.documentElement.setAttribute('data-theme',S.theme);
-
-  // Restore session F5
   S.cur=restoreSession(S.users);
 
-  // Fade boot screen
   const bootEl=document.getElementById('boot');
   bootEl.classList.add('fade');
   setTimeout(()=>{
@@ -2840,13 +2843,11 @@ async function boot(){
 
 window.addEventListener('load',()=>{ setTimeout(boot,150); });
 
-// Safety net: nếu có thay đổi chưa sync lên Supabase (ví dụ mạng chập chờn),
-// cứ mỗi 30s kiểm tra và ghi lại nếu cần.
+// Safety net: nếu Supabase chưa nhận được (lỗi mạng tạm thời), thử lại mỗi 30s
 setInterval(()=>{
-  if(!S.cur||DB.mode==='local') return;
-  if(DB.saving) return;
-  // Nếu lastSync quá cũ so với lastSaveTime → ghi lại
-  const syncAge=DB.lastSync?Date.now()-DB.lastSync.getTime():Infinity;
+  if(!S.cur||DB.mode==='local'||DB.saving) return;
+  const syncAge=DB.lastSync ? Date.now()-DB.lastSync.getTime() : Infinity;
+  // Nếu đã hơn 25s kể từ lần sync cuối VÀ có dữ liệu cần sync → thử lại
   if(syncAge>25000 && _lastSaveTime>0){
     _doSupaSave();
   }
