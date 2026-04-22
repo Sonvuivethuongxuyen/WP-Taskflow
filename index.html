@@ -520,6 +520,9 @@ function makeDemoData(){
 // ── Trạng thái kết nối ──
 const DB = { mode:'unknown', saving:false, pendingSave:false, lastSync:null, syncError:null };
 
+// Timestamp lần cuối save() được gọi — polling sẽ bỏ qua nếu quá gần
+let _lastSaveTime = 0;
+
 // ── Supabase headers ──
 function supaHeaders(){
   return{
@@ -542,10 +545,10 @@ async function supaLoad(){
       const d=rows[0].payload;
       if(Object.keys(d).length>0) return{...DEFAULT_DATA,...d};
     }
-    return null; // bảng rỗng → cần seed
+    return null;
   }catch(e){
     console.error('[supaLoad]',e);
-    return undefined; // lỗi kết nối
+    return undefined;
   }
 }
 
@@ -578,27 +581,46 @@ function lsSave(data){
 }
 
 // ── save() — gọi ở mọi nơi khi thay đổi dữ liệu ──
+// FIX: snapshot state tại thời điểm thực sự ghi (trong _doSupaSave),
+//      không phải tại thời điểm save() được gọi — tránh bản cũ thắng bản mới.
 let _saveTimer=null;
 function save(){
-  const payload={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
-  lsSave(payload); // cache ngay
+  _lastSaveTime = Date.now(); // đánh dấu "đang có thay đổi chưa ghi xong"
+  // Lưu localStorage ngay lập tức (không debounce) để F5 không mất dữ liệu
+  const snap={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
+  lsSave(snap);
+  // Debounce 800ms rồi mới ghi Supabase — gộp nhiều thao tác liên tiếp
   clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(()=>_doSupaSave(payload),500); // debounce 500ms
+  _saveTimer=setTimeout(_doSupaSave, 800);
 }
 
-async function _doSupaSave(payload){
+async function _doSupaSave(){
   if(DB.mode==='local') return;
-  if(DB.saving){DB.pendingSave=payload;return;}
+  if(DB.saving){
+    // Đang ghi dở → đánh dấu cần ghi thêm lần nữa sau khi xong
+    DB.pendingSave=true;
+    return;
+  }
   DB.saving=true;
+  _lastSaveTime=Date.now(); // reset lại để polling không chen vào ngay sau khi ghi xong
+  // Snapshot state TẠI THỜI ĐIỂM NÀY — luôn là bản mới nhất
+  const payload={users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed||{}};
   const ok=await supaWrite(payload);
   DB.saving=false;
   if(ok){
-    DB.lastSync=new Date();DB.syncError=null;
+    DB.lastSync=new Date();
+    DB.syncError=null;
+    _lastSaveTime=Date.now(); // lần cuối sync thành công
   } else {
-    DB.syncError='Ghi thất bại';
+    DB.syncError='Ghi thất bại — sẽ thử lại';
+    // Thử lại sau 3 giây nếu thất bại
+    setTimeout(_doSupaSave, 3000);
   }
   updateSyncBadge();
-  if(DB.pendingSave){const p=DB.pendingSave;DB.pendingSave=null;_doSupaSave(p);}
+  if(DB.pendingSave){
+    DB.pendingSave=false;
+    setTimeout(_doSupaSave, 300); // ghi thêm lần nữa
+  }
 }
 
 // ── Badge trạng thái đồng bộ ──
@@ -624,24 +646,46 @@ function updateSyncBadge(){
   }
 }
 
-// ── Polling 15 giây — cập nhật khi máy khác thay đổi ──
+// ── Polling 15 giây — cập nhật khi máy KHÁC thay đổi ──
+// FIX: bỏ qua poll nếu máy NÀY vừa save trong 5 giây qua (tránh overwrite)
 let _pollTimer=null;
 function startPolling(){
   if(_pollTimer||DB.mode==='local') return;
   _pollTimer=setInterval(async()=>{
-    if(!S.cur||document.getElementById('mroot').innerHTML) return;
+    // Không poll khi: chưa đăng nhập, đang có modal mở, đang save, hoặc vừa save xong
+    if(!S.cur) return;
+    if(document.getElementById('mroot').innerHTML) return;
+    if(DB.saving) return;
+    if(Date.now()-_lastSaveTime < 5000) return; // bỏ qua 5s sau mỗi lần save
+
     const remote=await supaLoad();
     if(!remote||!remote.tasks) return;
+
+    // So sánh bằng chuỗi JSON — chỉ áp dụng nếu khác thật sự
     const lStr=JSON.stringify({tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,users:S.users});
     const rStr=JSON.stringify({tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,users:remote.users});
-    if(lStr!==rStr){
-      Object.assign(S,{users:remote.users||S.users,tasks:remote.tasks,asn:remote.asn,cmts:remote.cmts,logs:remote.logs,notifs:remote.notifs||S.notifs,tblCollapsed:remote.tblCollapsed||S.tblCollapsed});
-      lsSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed});
-      rp(S.page);
-      const unread=S.notifs.filter(n=>!n.read).length;
-      document.getElementById('nbdot').style.display=unread?'block':'none';
-      DB.lastSync=new Date();updateSyncBadge();
-    }
+    if(lStr===rStr) return; // giống nhau → không cần làm gì
+
+    // Kiểm tra lần nữa — nếu trong lúc đang fetch về thì user vừa save → bỏ qua
+    if(DB.saving) return;
+    if(Date.now()-_lastSaveTime < 5000) return;
+
+    // Áp dụng dữ liệu từ máy khác
+    Object.assign(S,{
+      users:remote.users||S.users,
+      tasks:remote.tasks,
+      asn:remote.asn,
+      cmts:remote.cmts,
+      logs:remote.logs,
+      notifs:remote.notifs||S.notifs,
+      tblCollapsed:remote.tblCollapsed||S.tblCollapsed,
+    });
+    lsSave({users:S.users,tasks:S.tasks,asn:S.asn,cmts:S.cmts,logs:S.logs,notifs:S.notifs,theme:S.theme,tblCollapsed:S.tblCollapsed});
+    rp(S.page);
+    const unread=S.notifs.filter(n=>!n.read).length;
+    document.getElementById('nbdot').style.display=unread?'block':'none';
+    DB.lastSync=new Date();
+    updateSyncBadge();
   },15000);
 }
 
@@ -2795,7 +2839,18 @@ async function boot(){
 }
 
 window.addEventListener('load',()=>{ setTimeout(boot,150); });
-setInterval(()=>{if(S.cur)save();},30000);
+
+// Safety net: nếu có thay đổi chưa sync lên Supabase (ví dụ mạng chập chờn),
+// cứ mỗi 30s kiểm tra và ghi lại nếu cần.
+setInterval(()=>{
+  if(!S.cur||DB.mode==='local') return;
+  if(DB.saving) return;
+  // Nếu lastSync quá cũ so với lastSaveTime → ghi lại
+  const syncAge=DB.lastSync?Date.now()-DB.lastSync.getTime():Infinity;
+  if(syncAge>25000 && _lastSaveTime>0){
+    _doSupaSave();
+  }
+},30000);
 
 // ═══════════════════════════════════════════════
 // KANBAN COLLAPSE — toggle DOM trực tiếp, không re-render
